@@ -2,7 +2,7 @@
   description = "whiteboard-opencv";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/4095b8232c4fb44aefce7aef8b3f106982e2b428";
   };
 
   outputs = inputs@{ flake-parts, ... }:
