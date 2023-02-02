@@ -2,3 +2,4 @@ result
 build
 .ccls-cache
 .direnv
+.pre-commit-config.yaml
