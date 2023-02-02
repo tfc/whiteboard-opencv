@@ -14,6 +14,7 @@ find_package(OpenCV
 
 add_executable(DisplayImage
   src/main.cpp
+  src/whiteboard.cpp
   )
 
 set_property(TARGET DisplayImage
