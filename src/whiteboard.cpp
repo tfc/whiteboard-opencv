@@ -11,7 +11,7 @@ struct WhiteboardMarkers {
   Points bottomRight;
 };
 
-static std::optional<WhiteboardMarkers> getBoardMarkers(const cv::Mat &image) {
+static WhiteboardMarkers getBoardMarkers(const cv::Mat &image) {
   std::vector<int> markerIds;
   std::vector<Points> markerCorners, rejectedCandidates;
   const auto detectorParams = cv::aruco::DetectorParameters();
@@ -29,12 +29,15 @@ static std::optional<WhiteboardMarkers> getBoardMarkers(const cv::Mat &image) {
   };
 
   auto ul = getCorner(203);
-  auto br = getCorner(98);
-
-  if (ul && br) {
-    return WhiteboardMarkers{std::move(*ul), std::move(*br)};
+  if (!ul) {
+    throw exceptions::MissingUpperLeft{};
   }
-  return {};
+  auto br = getCorner(98);
+  if (!br) {
+    throw exceptions::MissingBottomRight{};
+  }
+
+  return WhiteboardMarkers{std::move(*ul), std::move(*br)};
 }
 
 static cv::Mat getInitialPerspectiveTransform(const Points &sourcePoints, const float factor = 1.0) {
@@ -78,6 +81,15 @@ static cv::Point2f transform(const cv::Mat &m, cv::Point2f p) {
 
 static cv::Point2f maxSizeWithProportion(int maxDimension, const cv::Point2f &detectedProportions) {
   const auto maxDimF = float(maxDimension);
+
+  if (detectedProportions.x <= 0.0) {
+    throw exceptions::BadPlacement{"bottom-right code does not appear to be right of upper-left code"};
+  }
+
+  if (detectedProportions.y <= 0.0) {
+    throw exceptions::BadPlacement{"bottom-right code does not appear to be lower than upper-left code"};
+  }
+
   if (detectedProportions.y / detectedProportions.x > 1) {
     return {maxDimF * detectedProportions.x / detectedProportions.y, maxDimF};
   }
@@ -85,15 +97,12 @@ static cv::Point2f maxSizeWithProportion(int maxDimension, const cv::Point2f &de
 }
 
 std::pair<cv::Size, cv::Mat> transformation(const cv::Mat &image, size_t maxPixels) {
-  const auto oBoardMarkers = getBoardMarkers(image);
-  if (!oBoardMarkers) {
-    // throw board error
-  }
-  const auto perspectiveMatrix = getInitialPerspectiveTransform(oBoardMarkers->topLeft);
-  const auto br = transform(perspectiveMatrix, oBoardMarkers->bottomRight[2]);
+  const auto boardMarkers = getBoardMarkers(image);
+  const auto perspectiveMatrix = getInitialPerspectiveTransform(boardMarkers.topLeft);
+  const auto br = transform(perspectiveMatrix, boardMarkers.bottomRight[2]);
   const auto imageSize = maxSizeWithProportion(1000, br);
   const auto arucoWidth = imageSize.x / br.x;
-  auto finalMatrix = getSecondPerspectiveTransform(*oBoardMarkers, imageSize, arucoWidth);
+  auto finalMatrix = getSecondPerspectiveTransform(boardMarkers, imageSize, arucoWidth);
 
   return {cv::Size(imageSize.x, imageSize.y), std::move(finalMatrix)};
 }
