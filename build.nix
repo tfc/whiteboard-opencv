@@ -1,10 +1,10 @@
-{ stdenv, opencv4, cmake, pkg-config, xorg, boost, gtk2, ffmpeg   }:
+{ stdenv, opencv4, cmake }:
 
 stdenv.mkDerivation {
   name = "whiteboard-opencv";
   src = ./.;
   VERBOSE=1;
-  nativeBuildInputs = [ cmake pkg-config ];
+  nativeBuildInputs = [ cmake ];
   buildInputs = [ opencv4 ];
 
   installPhase = ''
