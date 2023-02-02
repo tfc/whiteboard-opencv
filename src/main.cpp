@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   if (argc != 2) {
     std::cout << "usage: DisplayImage.out <Image_Path>\n";
     return -1;
@@ -17,7 +17,8 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  const auto [wbImageSize, whiteboardMatrix] = whiteboard::transformation(image, 1000);
+  const auto [wbImageSize, whiteboardMatrix] =
+      whiteboard::transformation(image, 1000);
 
   auto tImage = image.clone();
   cv::warpPerspective(image, tImage, whiteboardMatrix, wbImageSize);
@@ -28,4 +29,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-
