@@ -101,6 +101,20 @@ maxSizeWithProportion(int maxDimension,
   return {maxDimF, maxDimF * detectedProportions.y / detectedProportions.x};
 }
 
+static cv::Mat shearingMatrix(const cv::Size &s, float n) {
+  float w = s.width, h = s.height;
+
+  /* this is ugly due to clang-format. the matrix looks like this:
+   *
+   * / (n+1) / 2,      w/h * (1-n), 0 \
+   * | h/(2w) * (1-n), (n+1) / 2,   0 |
+   * \ 0             , 0,           1 /
+   */
+
+  return cv::Mat_<double>(3, 3) << (n + 1.0) / 2.0, w * (1.0 - n) / h, 0,
+         h * (1.0 - n) / 2.0 / w, (n + 1) / 2.0, 0, 0, 0, 1;
+}
+
 std::pair<cv::Size, cv::Mat> transformation(const cv::Mat &image,
                                             size_t maxPixels) {
   const auto boardMarkers = getBoardMarkers(image);
@@ -109,10 +123,24 @@ std::pair<cv::Size, cv::Mat> transformation(const cv::Mat &image,
   const auto br = transform(perspectiveMatrix, boardMarkers.bottomRight[2]);
   const auto imageSize = maxSizeWithProportion(1000, br);
   const auto arucoWidth = imageSize.x / br.x;
-  auto finalMatrix =
+  auto undistortMatrix =
       getSecondPerspectiveTransform(boardMarkers, imageSize, arucoWidth);
 
-  return {cv::Size(imageSize.x, imageSize.y), std::move(finalMatrix)};
+  const auto imageCvSize = cv::Size(imageSize.x, imageSize.y);
+
+  cv::Mat finalMatrix = undistortMatrix;
+
+  {
+    auto v = boardMarkers.bottomRight;
+    for (auto &i : v) {
+      i = transform(perspectiveMatrix, i);
+    }
+    const auto shearFactor = cv::norm(v[2] - v[0]) / cv::norm(v[3] - v[1]);
+    std::cerr << "Correcting by shear factor " << shearFactor << "...\n";
+    finalMatrix = shearingMatrix(cv::Size(1, 1), shearFactor) * finalMatrix;
+  }
+
+  return {imageCvSize, std::move(finalMatrix)};
 }
 
 } // namespace whiteboard
