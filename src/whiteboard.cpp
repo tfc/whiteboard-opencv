@@ -13,12 +13,12 @@ struct WhiteboardMarkers {
 
 static WhiteboardMarkers getBoardMarkers(const cv::Mat &image) {
   std::vector<int> markerIds;
-  std::vector<Points> markerCorners, rejectedCandidates;
+  std::vector<Points> markerCorners;
   const auto detectorParams = cv::aruco::DetectorParameters();
   const auto dictionary =
-      cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+      cv::aruco::getPredefinedDictionary(cv::aruco::DICT_ARUCO_ORIGINAL);
   cv::aruco::ArucoDetector detector(dictionary, detectorParams);
-  detector.detectMarkers(image, markerCorners, markerIds, rejectedCandidates);
+  detector.detectMarkers(image, markerCorners, markerIds);
 
   auto getCorner = [&](int findId) -> std::optional<Points> {
     for (size_t i{0}; i < markerIds.size(); ++i) {
@@ -29,11 +29,11 @@ static WhiteboardMarkers getBoardMarkers(const cv::Mat &image) {
     return {};
   };
 
-  auto ul = getCorner(203);
+  auto ul = getCorner(11);
   if (!ul) {
     throw exceptions::MissingUpperLeft{};
   }
-  auto br = getCorner(98);
+  auto br = getCorner(22);
   if (!br) {
     throw exceptions::MissingBottomRight{};
   }
@@ -63,9 +63,8 @@ static cv::Mat getSecondPerspectiveTransform(const WhiteboardMarkers &wbMarkers,
       {0.0, 0.0},
       {arucoWidth, 0.0},
       {arucoWidth, arucoWidth},
-      {0.0, arucoWidth}
+      {0.0, arucoWidth},
 
-      ,
       {imageSize.x - arucoWidth, imageSize.y - arucoWidth},
       {imageSize.x, imageSize.y - arucoWidth},
       {imageSize.x, imageSize.y},
