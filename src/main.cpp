@@ -6,8 +6,9 @@
 #include <iostream>
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    std::cout << "usage: DisplayImage.out <Image_Path>\n";
+  if (argc < 2) {
+    std::cout
+        << "usage: DisplayImage.out <input_image_path> [output_image_path]\n";
     return -1;
   }
 
@@ -22,6 +23,10 @@ int main(int argc, char **argv) {
 
   auto tImage = image.clone();
   cv::warpPerspective(image, tImage, whiteboardMatrix, wbImageSize);
+
+  if (argc == 3) {
+    cv::imwrite(argv[2], tImage);
+  }
 
   cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE);
   cv::imshow("Display Image", tImage);
