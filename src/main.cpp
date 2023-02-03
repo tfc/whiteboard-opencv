@@ -18,19 +18,30 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  const auto [wbImageSize, whiteboardMatrix] =
-      whiteboard::transformation(image, 1000);
+  try {
+    const auto [wbImageSize, whiteboardMatrix] =
+        whiteboard::transformation(image, 1000);
 
-  auto tImage = image.clone();
-  cv::warpPerspective(image, tImage, whiteboardMatrix, wbImageSize);
+    auto tImage = image.clone();
+    cv::warpPerspective(image, tImage, whiteboardMatrix, wbImageSize);
 
-  if (argc == 3) {
-    cv::imwrite(argv[2], tImage);
+    if (argc == 3) {
+      cv::imwrite(argv[2], tImage);
+    }
+
+    cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE);
+    cv::imshow("Display Image", tImage);
+    cv::waitKey(0);
+  } catch (const whiteboard::exceptions::MissingUpperLeft &) {
+    std::cerr << "Error: Upper Left code (the one with ID 11) is missing\n";
+    return 1;
+  } catch (const whiteboard::exceptions::MissingBottomRight &) {
+    std::cerr << "Error: Bottom Right code (the one with ID 22) is missing\n";
+    return 1;
+  } catch (const whiteboard::exceptions::BadPlacement &e) {
+    std::cerr << "Error: The two ARUCO codes are misplaced (" << e.msg << ")\n";
+    return 1;
   }
-
-  cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE);
-  cv::imshow("Display Image", tImage);
-  cv::waitKey(0);
 
   return 0;
 }
