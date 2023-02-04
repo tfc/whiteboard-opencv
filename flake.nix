@@ -15,6 +15,9 @@
         };
         devShells.default = pkgs.mkShell {
           inputsFrom = [ config.packages.default ];
+          nativeBuildInputs = with pkgs; [
+            (pkgs.octave.passthru.withPackages (p: with p; [ symbolic ]))
+          ];
           inherit (config.checks.pre-commit-check) shellHook;
         };
         checks = {
@@ -25,6 +28,7 @@
               nixpkgs-fmt.enable = true;
               statix.enable = true;
             };
+            excludes = [ "^doc.*" ];
           };
         };
       };

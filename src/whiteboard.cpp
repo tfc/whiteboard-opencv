@@ -102,7 +102,7 @@ maxSizeWithProportion(int maxDimension,
 }
 
 static cv::Mat shearingMatrix(const cv::Size &s, float n) {
-  float w = s.width, h = s.height;
+  const float w = s.width, h = s.height;
 
   // clang-format off
   return cv::Mat_<double>(3, 3) <<
