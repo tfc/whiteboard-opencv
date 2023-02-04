@@ -5,6 +5,15 @@
 
 #include <iostream>
 
+cv::Mat transformedImage(const cv::Mat &input, bool shearCorrection) {
+  const auto [wbImageSize, whiteboardMatrix] =
+      whiteboard::transformation(input, 1000, shearCorrection);
+
+  auto tImage = input.clone();
+  cv::warpPerspective(input, tImage, whiteboardMatrix, wbImageSize);
+  return tImage;
+}
+
 int main(int argc, char **argv) {
   if (argc < 2) {
     std::cout
@@ -19,18 +28,16 @@ int main(int argc, char **argv) {
   }
 
   try {
-    const auto [wbImageSize, whiteboardMatrix] =
-        whiteboard::transformation(image, 1000);
-
-    auto tImage = image.clone();
-    cv::warpPerspective(image, tImage, whiteboardMatrix, wbImageSize);
+    const auto out = transformedImage(image, true);
 
     if (argc == 3) {
-      cv::imwrite(argv[2], tImage);
+      cv::imwrite(argv[2], out);
     }
 
-    cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE);
-    cv::imshow("Display Image", tImage);
+    cv::namedWindow("Original Picture", cv::WINDOW_AUTOSIZE);
+    cv::imshow("Original Picture", image);
+    cv::namedWindow("Normalized Whiteboard Image", cv::WINDOW_AUTOSIZE);
+    cv::imshow("Normalized Whiteboard Image", out);
     cv::waitKey(0);
   } catch (const whiteboard::exceptions::MissingUpperLeft &) {
     std::cerr << "Error: Upper Left code (the one with ID 11) is missing\n";

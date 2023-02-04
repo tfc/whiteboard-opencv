@@ -104,19 +104,24 @@ maxSizeWithProportion(int maxDimension,
 static cv::Mat shearingMatrix(const cv::Size &s, float n) {
   float w = s.width, h = s.height;
 
-  /* this is ugly due to clang-format. the matrix looks like this:
-   *
-   * / (n+1) / 2,      w/h * (1-n), 0 \
-   * | h/(2w) * (1-n), (n+1) / 2,   0 |
-   * \ 0             , 0,           1 /
-   */
-
-  return cv::Mat_<double>(3, 3) << (n + 1.0) / 2.0, w * (1.0 - n) / h, 0,
-         h * (1.0 - n) / 2.0 / w, (n + 1) / 2.0, 0, 0, 0, 1;
+  // clang-format off
+  return cv::Mat_<double>(3, 3) <<
+    n / 2.0 + 0.5,           (1.0 - n) / 2.0 * w / h, 0,
+    (1.0 - n) / 2.0 * h / w, n / 2.0 + 0.5,           0,
+    0,                       0,                       1;
+  // clang-format on
 }
 
-std::pair<cv::Size, cv::Mat> transformation(const cv::Mat &image,
-                                            size_t maxPixels) {
+static float boxShearFactor(const Points &ps, const cv::Mat M) {
+  auto v = ps;
+  for (auto &i : v) {
+    i = transform(M, i);
+  }
+  return cv::norm(v[2] - v[0]) / cv::norm(v[3] - v[1]);
+}
+
+std::pair<cv::Size, cv::Mat>
+transformation(const cv::Mat &image, size_t maxPixels, bool shearCorrection) {
   const auto boardMarkers = getBoardMarkers(image);
   const auto perspectiveMatrix =
       getInitialPerspectiveTransform(boardMarkers.topLeft);
@@ -130,14 +135,10 @@ std::pair<cv::Size, cv::Mat> transformation(const cv::Mat &image,
 
   cv::Mat finalMatrix = undistortMatrix;
 
-  {
-    auto v = boardMarkers.bottomRight;
-    for (auto &i : v) {
-      i = transform(perspectiveMatrix, i);
-    }
-    const auto shearFactor = cv::norm(v[2] - v[0]) / cv::norm(v[3] - v[1]);
-    std::cerr << "Correcting by shear factor " << shearFactor << "...\n";
-    finalMatrix = shearingMatrix(cv::Size(1, 1), shearFactor) * finalMatrix;
+  if (shearCorrection) {
+    const auto shearBr =
+        boxShearFactor(boardMarkers.bottomRight, perspectiveMatrix);
+    finalMatrix = shearingMatrix(imageCvSize, shearBr) * finalMatrix;
   }
 
   return {imageCvSize, std::move(finalMatrix)};

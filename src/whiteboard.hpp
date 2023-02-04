@@ -2,8 +2,7 @@
 
 namespace whiteboard {
 
-std::pair<cv::Size, cv::Mat> transformation(const cv::Mat &image,
-                                            size_t maxPixels);
+std::pair<cv::Size, cv::Mat> transformation(const cv::Mat &, size_t, bool);
 
 namespace exceptions {
 struct MissingCode {};
